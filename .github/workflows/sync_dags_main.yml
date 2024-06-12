@@ -3,7 +3,7 @@ name: Upload to S3
 on:
   push:
     branches:
-      - develop
+      - main
 
 jobs:
   deploy:
