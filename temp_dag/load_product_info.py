@@ -105,7 +105,7 @@ with DAG(
     }
 ) as dag:
 
-    url_path = Variable.get("DATA_DIR")+"/coupang_final.txt"
+    url_path = "./coupang_final.txt"
     schema = 'jheon735'  
     infotable = 'coupang_product_info'
 
