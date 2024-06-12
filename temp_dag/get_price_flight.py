@@ -139,14 +139,16 @@ def get_naver_flight_price(departure_date, departure_airport, arrival_date, arri
             # 편도일 경우 Null 값이 되는 컬럼
             arrival_layover_count, arrival_airline, arrival_duration, arrival_takeoff_time, arrival_landing_time = None, None, None, None, None
 
+            return [price, departure_airline, departure_layover_count, departure_duration, departure_takeoff_time, departure_landing_time,\
+                arrival_layover_count, arrival_airline, arrival_duration, arrival_takeoff_time, arrival_landing_time]
+
     except:
         pass
         # raise
     finally:
         driver.quit()
     
-    return [price, departure_airline, departure_layover_count, departure_duration, departure_takeoff_time, departure_landing_time,\
-            arrival_layover_count, arrival_airline, arrival_duration, arrival_takeoff_time, arrival_landing_time]
+    
 
 
 # @task
