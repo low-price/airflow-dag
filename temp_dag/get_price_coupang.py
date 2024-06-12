@@ -22,7 +22,7 @@ def get_Redshift_connection(autocommit=True):
 
 
 @task
-def get_coupang_price(url):
+def get_product_info(url):
     logging.info(datetime.utcnow())
     logging.info(url)
     headers = {
@@ -37,8 +37,9 @@ def get_coupang_price(url):
     venderID = urls[2].split("&")[0]
     if response.status_code == 200:
         soup = BeautifulSoup(response.content, 'html.parser')
-        name = soup.select_one(".prod-buy-header__title").get_text(strip=True)[:5]
+        name = soup.select_one(".prod-buy-header__title").get_text(strip=True)
         price_element = soup.find('div', class_='prod-coupon-price price-align major-price-coupon').select_one('.total-price strong')
+        img_url = soup.select_one(".prod-image__detail")["src"][2:]
         if price_element:
             price = price_element.get_text(strip=True)
             numbers = re.findall(r'\d+',price)
@@ -55,39 +56,53 @@ def get_coupang_price(url):
                 logging.info("URL을 다시 입력해주세요")
     else:
         logging.error(f"Failed to retrieve the webpage. Status code: {response.status_code}")
-    return [name, itemID , price]
+    return [name, itemID , venderID, url, img_url, price]
 
 
 @task
-def create_table(schema, iteminfo):
-    logging.info("create table started")
-    name, itemID, price = iteminfo    
+def product_info_load(schema, table, iteminfo):
+    logging.info("product info load started")
+    name, itemID , venderID, url, img_url, price = iteminfo    
     cur = get_Redshift_connection()   
     try:
         cur.execute("BEGIN;")
-        cur.execute(f"CREATE TABLE IF NOT EXISTS {schema}.{name}{itemID} (datetime timestamp,price int);")
-        cur.execute("COMMIT;") 
-        logging.info(f"created {name}{itemID} table done")
+        sql = f"SELECT COUNT(*) FROM {schema}.{table} WHERE item_id={itemID} and vendor_item_id={venderID};"
+        cur.execute(sql)
+        count = cur.fetchone()[0]
+        if count == 0:
+            sql = f"INSERT INTO {schema}.{table} VALUES ('{name}', '{price}')"
+            cur.execute(f"INSERT INTO {schema}.{table} (item_id, vendor_item_id, url, product_name, image_url) VALUES ({itemID},{venderID},'{url}','{name}','{img_url}');")
+            cur.execute("COMMIT;")
+            logging.info(f"inserted {name} info")
+        else:
+            logging.info("Existed info")
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-        cur.execute("ROLLBACK;")   
+        logging.info("ROLLBACK")
+        cur.execute("ROLLBACK;")
+    return iteminfo
 
 
 @task
-def load(schema, iteminfo):
-    logging.info("load started")
-    name, itemID, price = iteminfo    
-    cur = get_Redshift_connection()   
+def product_price_load(schema, infotable, loadtable, iteminfo):
+    logging.info("product price load started")
+    name, itemID , venderID, url, img_url, price = iteminfo      
+    cur = get_Redshift_connection()
 
     try:
         cur.execute("BEGIN;")
-        sql = f"INSERT INTO {schema}.{name}{itemID} VALUES ('{datetime.utcnow()}', '{price}')"
+        sql = f"SELECT id FROM {schema}.{infotable} WHERE item_id={itemID} and vendor_item_id={venderID};"
+        cur.execute(sql)
+        id = cur.fetchone()[0]
+        logging.info(id)
+        sql = f"INSERT INTO {schema}.{loadtable} VALUES ('{datetime.utcnow()}', {id}, {price})"
         cur.execute(sql)
         cur.execute("COMMIT;") 
+        logging.info("load done")
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
+        logging.info("ROLLBACK")
         cur.execute("ROLLBACK;")   
-    logging.info("load done")
 
 
 with DAG(
@@ -105,8 +120,9 @@ with DAG(
 
     url = "https://link.coupang.com/a/bEPwcW"
     schema = 'jheon735'   ## 자신의 스키마로 변경
+    infotable = 'coupang_product_info'
+    pricetalbe = 'coupang_product_price_history'
 
-    iteminfo = get_coupang_price(url)
-    # itemID, venderID, price = iteminfo
-    create_table(schema, iteminfo)
-    load(schema, iteminfo)
+    iteminfo = get_product_info(url)
+    info_load = product_info_load(schema, infotable, iteminfo)
+    product_price_load(schema, infotable, pricetalbe, info_load)
