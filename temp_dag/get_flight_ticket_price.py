@@ -29,8 +29,25 @@ def get_Redshift_connection(autocommit=True):
     return conn.cursor()
 
 @task
-def get_flight_ticket_price(ticket_info):
+def get_flight_tickect_info(schema, infotablename):
     logging.info(datetime.utcnow())
+    logging.info(f"get records flight ticker info")
+
+    cursor = get_Redshift_connection()  
+
+    cursor.execute(f'SELECT * FROM {schema}.{infotablename}')  # 테이블 이름 설정해야함
+    records = cursor.fetchall()
+
+    cursor.close()
+
+    logging.info(f"get records flight ticker info done")
+    logging.info(f"{records} / {type(records)}")
+
+    return records
+
+@task
+def get_flight_ticket_price(ticket_info):
+    
     logging.info(f"티켓 info 개수: {len(ticket_info)}")
     logging.info(ticket_info)
     prices = []
@@ -55,7 +72,7 @@ def get_flight_ticket_price(ticket_info):
         remote_webdriver = 'remote_chromedriver'
         with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
             # Scraping part
-            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+            # driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options) # docker에서는 필요 없음
 
             if roundtrip:
                 url = f"https://flight.naver.com/flights/international/{departure_airport}-{arrival_airport}-{departure_date}/"\
@@ -138,9 +155,6 @@ def get_flight_ticket_price(ticket_info):
 
                     # 이륙 시간, 착륙 시간
                     route_times = inner_div.find_all(class_="route_time__xWu7a")
-                    # print(route_times)
-                    # print(route_times[0])
-                    # print(type(route_times[0]))
                     departure_takeoff_time = route_times[0].text
                     departure_landing_time = route_times[1].text
 
@@ -154,13 +168,16 @@ def get_flight_ticket_price(ticket_info):
             
                 prices.append(price)
 
-            except (Exception, psycopg2.DatabaseError) as error:
+            except Exception as error:
                 logging.error(error)
                 raise
-            finally:
-                driver.quit()
 
-    logging.info(f"return {prices}")
+    # try:
+    #     driver.quit()
+    # except Exception as error:
+    #     logging.error(error)
+    #     raise
+
     logging.info("get price done")
     return prices
         
@@ -221,7 +238,7 @@ def transform_format(data):
                 
             prices.append(price)
         
-        except (Exception, psycopg2.DatabaseError) as error:
+        except Exception as error:
             logging.error(error)
             raise
 
@@ -235,7 +252,7 @@ def load(schema, pricetablename, data):
     logging.info("load started")
     datetime.utcnow()
     cur = get_Redshift_connection()   
-
+    
     for row in data:
         id, price, departure_airline, departure_layover_count, departure_duration, departure_takeoff_time, departure_landing_time,\
                 arrival_layover_count, arrival_airline, arrival_duration, arrival_takeoff_time, arrival_landing_time = row
@@ -258,7 +275,7 @@ def load(schema, pricetablename, data):
             ))
             cur.execute("COMMIT;") 
 
-        except (Exception, psycopg2.DatabaseError) as error:
+        except Exception as error:
             logging.error(error)
             logging.info("ROLLBACK")
             cur.execute("ROLLBACK;")
@@ -267,15 +284,6 @@ def load(schema, pricetablename, data):
     logging.info("load done")
 
 
-def get_flight_info(schema, infotablename):
-    cursor = get_Redshift_connection()  
-
-    cursor.execute(f'SELECT * FROM {schema}.{infotablename}')  # 테이블 이름 설정해야함
-    records = cursor.fetchall()
-
-    cursor.close()
-
-    return records
 
 
 with DAG(
@@ -295,7 +303,7 @@ with DAG(
     pricetablename = 'flight_ticket_price_history'
 
     # 항공권 info 가져오기
-    ticket_info = get_flight_info(schema, infotablename)
+    ticket_info = get_flight_tickect_info(schema, infotablename)
 
     data = get_flight_ticket_price(ticket_info)
     transformed_data = transform_format(data)
