@@ -7,6 +7,7 @@ default_args = {
     'start_date': datetime(2022, 1, 1),
     'retries': 2,
     'retry_delay': timedelta(minutes=2),
+    'catchup': False,
 }
 
 with DAG(
