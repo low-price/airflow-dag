@@ -260,7 +260,7 @@ def load(**context):
     data = context['task_instance'].xcom_pull(key="return_value", task_ids='transform_format')
     execution_date = context["execution_date"].strftime('%Y-%m-%d %H:%M:%S')
 
-    cur = get_Redshift_connection()   
+    cursor = get_Redshift_connection()   
     
     for row in data:
         id, price, departure_airline, departure_layover_count, departure_duration, departure_takeoff_time, departure_landing_time,\
@@ -269,7 +269,7 @@ def load(**context):
         logging.info("flight ticket id: {id}")
 
         try:
-            cur.execute("BEGIN;")
+            cursor.execute("BEGIN;")
             sql = f"""
                 INSERT INTO {schema}.{pricetablename} (
                     id, ts, price, departure_airline, departure_layover_count, departure_duration, departure_takeoff_time, departure_landing_time,
@@ -278,18 +278,19 @@ def load(**context):
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
             """
-            cur.execute(sql, (
+            cursor.execute(sql, (
                 id, execution_date, price, departure_airline, departure_layover_count, departure_duration, departure_takeoff_time, departure_landing_time,
                 arrival_layover_count, arrival_airline, arrival_duration, arrival_takeoff_time, arrival_landing_time
             ))
-            cur.execute("COMMIT;") 
+            cursor.execute("COMMIT;") 
 
         except Exception as error:
             logging.error(error)
             logging.info("ROLLBACK")
-            cur.execute("ROLLBACK;")
+            cursor.execute("ROLLBACK;")
             raise
 
+    cursor.close()
     logging.info("load done")
 
 
