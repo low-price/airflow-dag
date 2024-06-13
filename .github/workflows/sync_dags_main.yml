@@ -22,4 +22,4 @@ jobs:
 
     - name: Sync repository to S3
       run: |
-        aws s3 sync temp_dag/ s3://lowprice-dags/dags/ --delete
+        aws s3 sync dag/ s3://lowprice-dags-main/dags/ --delete

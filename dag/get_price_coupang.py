@@ -97,7 +97,7 @@ def product_price_load(schema, infotable, loadtable, prices):
 with DAG(
     dag_id='get_price_coupang_v2',
     start_date=datetime(2024, 6, 1),
-    schedule='@once', #'*/10 * * * *',
+    schedule='0 */1 * * *',
     max_active_runs=1,
     catchup=False,
     default_args={
