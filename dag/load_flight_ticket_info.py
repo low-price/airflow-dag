@@ -67,14 +67,21 @@ def check_new_ticket_info(**context):
     count = 0
     for _, row in df.iterrows():
         cursor.execute("BEGIN;")
-        sql = f"""
-                SELECT COUNT(*) FROM {schema}.{table} 
-                WHERE departure_date=%s AND departure_airport=%s AND arrival_date=%s 
-                AND arrival_airport=%s AND is_roundtrip=%s;"""
-        
-        cursor.execute(sql, (
-            row["departure_date"], row["departure_airport"], row["arrival_date"], row["arrival_airport"], row["is_roundtrip"]
-        ))
+        if row["is_roundtrip"] == "TRUE": # 왕복
+            sql = f"""
+                    SELECT COUNT(*) FROM {schema}.{table} 
+                    WHERE departure_date=%s AND departure_airport=%s AND arrival_date=%s 
+                    AND arrival_airport=%s AND is_roundtrip=%s;"""
+            param = (row["departure_date"], row["departure_airport"], row["arrival_date"], row["arrival_airport"], row["is_roundtrip"])
+            
+        else: # 편도
+            sql = f"""
+                    SELECT COUNT(*) FROM {schema}.{table} 
+                    WHERE departure_date=%s AND departure_airport=%s AND arrival_date IS NULL
+                    AND arrival_airport=%s AND is_roundtrip=%s;"""
+            param = (row["departure_date"], row["departure_airport"], row["arrival_airport"], row["is_roundtrip"])
+
+        cursor.execute(sql, param)
         new = cursor.fetchone()[0]
         if new == 0:
             logging.info(list(row))
@@ -86,6 +93,7 @@ def check_new_ticket_info(**context):
     logging.info(f"check new ticket_info done")
 
     return new_tickets
+
 
 
 # redshift에 적재
