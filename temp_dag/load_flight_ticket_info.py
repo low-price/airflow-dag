@@ -7,8 +7,12 @@ from airflow.models import Variable
 from datetime import datetime
 from datetime import timedelta
 import logging
+
+from google.oauth2.service_account import Credentials
 import gspread
 import pandas as pd
+import json
+
 
 
 def get_Redshift_connection(autocommit=True):
@@ -17,12 +21,6 @@ def get_Redshift_connection(autocommit=True):
     conn.autocommit = autocommit
     return conn.cursor()
 
-
-import gspread
-import pandas as pd
-import json
-from google.oauth2.service_account import Credentials
-from airflow.models import Variable
 
 
 def read_tab_in_gsheet_to_df(**context):
@@ -55,8 +53,7 @@ def read_tab_in_gsheet_to_df(**context):
     return df
 
 
-# info temp 테이블 및 info 테이블 함께 조회하며 중복되지 않는 record 찾기
-# 두 테이블 조인해서 id가 null인 행 추출
+# 새로운 데이터 필터링
 def check_new_ticket_info(**context):
     schema = context["params"]["schema"]
     table = context["params"]["table"]
@@ -91,6 +88,7 @@ def check_new_ticket_info(**context):
     return new_tickets
 
 
+# redshift에 적재
 def load(**context):
     schema = context["params"]["schema"]
     table = context["params"]["table"]
@@ -100,6 +98,7 @@ def load(**context):
 
     cursor = get_Redshift_connection()
 
+    # 다음 id 찾기 (현재 id의 최대값 + 1)
     cursor.execute(f"SELECT COALESCE(MAX(id), 0) + 1 FROM {schema}.{table}")
     next_id = cursor.fetchone()[0]
     logging.info(f"next_id : {next_id}")
@@ -148,9 +147,9 @@ dag = DAG(
 
 
 sheet = {
-        "url": "https://docs.google.com/spreadsheets/d/1AJICer9RRJ-G3zxAc9Lk73gfK-nM0yn4gTRBK1Kbkzg/", 
-        "tab": "FlightTicketInfo",
-        "schema": "mool8487", #'jheon735'  
+        "url": "https://docs.google.com/spreadsheets/d/10BGe9rkS6fZT8KluhzVyI7Wy1wcZyYzUuIG0AG1LZnU/", 
+        "tab": "flight_info",
+        "schema": 'jheon735',
         "table": "flight_ticket_info"
 }
 
