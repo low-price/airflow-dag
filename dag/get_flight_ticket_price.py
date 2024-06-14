@@ -78,7 +78,11 @@ def get_flight_ticket_price(**context):
         options.add_argument('--disable-software-rasterizer')
         options.add_argument('--disable-extensions')
         options.add_argument('--disable-background-networking')
-        
+
+        options.add_argument('--disable-renderer-backgrounding')
+        options.add_argument('--disable-software-rasterizer')
+
+
 
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options) # docker에서는 필요 없음
 
