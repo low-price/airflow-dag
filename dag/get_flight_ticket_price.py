@@ -6,9 +6,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service   #드라이버는 브라우저마다 다르다
 from webdriver_manager.chrome import ChromeDriverManager    # pc에 설치된 크롬과 버전을 같게 하기 위해
 from bs4 import BeautifulSoup
-from selenium.webdriver.common.by import By     # 응답 요소에서 특정 요소를 추출하는 메서드
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 import re
 
 from datetime import datetime
@@ -17,8 +14,6 @@ from datetime import timedelta
 import logging
 
 import time
-
-from selenium.webdriver.chrome.options import Options
 
 
 
@@ -90,12 +85,6 @@ def get_flight_ticket_price(**context):
 
         try:
             # 모든 정보가 로딩 되기까지 시간이 걸림. 최소값을 못 가져오는 상황을 방지
-            # wait = WebDriverWait(driver, 100)
-            # wait.until(lambda driver: driver.execute_script('return document.readyState') == 'complete')
-
-            # wait.until(EC.presence_of_element_located((By.TAG_NAME, 'body')))  # 페이지가 완전히 로드될 때까지 대기
-            # wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'item_num__aKbk4')))
-            
             time.sleep(30)
 
             html = driver.page_source
@@ -308,7 +297,7 @@ def load(**context):
 with DAG(
     dag_id='get_naver_flight_price',
     start_date=datetime(2024, 6, 1),  # 날짜가 미래인 경우 실행이 안됨
-    schedule='0 0 * * *', # 매일 자정
+    schedule='0 * * * *', # 1시간 단위로
     max_active_runs=1,
     catchup=False,
     default_args={
