@@ -51,8 +51,9 @@ def get_price(urls):
         response = requests.get(url, headers=headers, verify=False)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
-            price_element = soup.find('div', class_='prod-coupon-price price-align major-price-coupon').select_one('.total-price strong')
+            price_element = soup.find('div', class_='prod-coupon-price price-align major-price-coupon')
             if price_element:
+                price_element = price_element.select_one('.total-price strong')
                 price = price_element.get_text(strip=True)
                 numbers = re.findall(r'\d+',price)
                 price = int(''.join(numbers))
