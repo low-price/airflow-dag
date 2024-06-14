@@ -134,7 +134,7 @@ def load(**context):
 
 
 dag = DAG(
-    dag_id='load_flight_ticket_info_v2',
+    dag_id='load_flight_ticket_info',
     start_date=datetime(2024, 6, 1),  
     schedule='@once', #'*/10 * * * *',  
     max_active_runs=1,

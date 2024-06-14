@@ -295,7 +295,7 @@ def load(**context):
 
 
 with DAG(
-    dag_id='get_naver_flight_price_on_docker',
+    dag_id='get_naver_flight_price',
     start_date=datetime(2024, 6, 1),  # 날짜가 미래인 경우 실행이 안됨
     schedule='0 0 * * *', # 매일 자정
     max_active_runs=1,
