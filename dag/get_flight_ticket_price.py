@@ -184,6 +184,7 @@ def get_flight_ticket_price(**context):
 
         except Exception as error:
             logging.error(error)
+            driver.quit()
             raise
 
 
