@@ -74,13 +74,10 @@ def get_flight_ticket_price(**context):
         options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
-        # options.add_argument('--disable-gpu')
-        # options.add_argument('--disable-software-rasterizer')
-        # options.add_argument('--disable-extensions')
-        # options.add_argument('--disable-background-networking')
 
-        # options.add_argument('--disable-renderer-backgrounding')
-        # options.add_argument('--disable-software-rasterizer')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--disable-setuid-sandbox')
+        options.add_argument("--start-maximized")
 
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options) # docker에서는 필요 없음
 
