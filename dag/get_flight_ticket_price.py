@@ -27,7 +27,7 @@ def get_Redshift_connection(autocommit=True):
     return conn.cursor()
 
 # info 테이블에서 항공권 정보 가져오기
-def get_flight_ticket_info(**context): # schema, infotablename
+def get_flight_ticket_info(**context):
     logging.info(datetime.utcnow())
     logging.info(f"start get records flight ticket info")
 
@@ -64,7 +64,7 @@ def get_flight_ticket_price(**context):
 
         # url에 삽입 가능하도록 날짜 포맷 변경
         departure_date = departure_date.strftime('%Y%m%d')
-        arrival_date = arrival_date.strftime('%Y%m%d')
+        if roundtrip: arrival_date = arrival_date.strftime('%Y%m%d')
 
         logging.info(f"출발일: {departure_date}, 출발지: {departure_airport}, 도착일: {arrival_date}, 도착지: {arrival_airport}, 왕복 여부: {roundtrip}")
 
@@ -87,10 +87,10 @@ def get_flight_ticket_price(**context):
         driver.get(url)
 
         try:
+            # 모든 정보가 로딩 되기까지 시간이 걸림. 최소값을 못 가져오는 상황을 방지
             wait = WebDriverWait(driver, 30)
             wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'item_num__aKbk4')))
-
-            # 모든 정보가 로딩 되기까지 시간이 걸림. 최소값을 못 가져오는 상황을 방지
+            
             time.sleep(10)
 
             html = driver.page_source
@@ -307,8 +307,7 @@ with DAG(
     catchup=False,
     default_args={
         'retries': 0,
-        'retry_delay': timedelta(minutes=3),
-        # 'on_failure_callback': slack.on_failure_callback,
+        'retry_delay': timedelta(minutes=3)
     }
 ) as dag:
     schema = 'jheon735'   ## 자신의 스키마로 변경

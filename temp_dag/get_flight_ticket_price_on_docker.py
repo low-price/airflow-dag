@@ -62,7 +62,7 @@ def get_flight_ticket_price(**context):
 
         # url에 삽입 가능하도록 날짜 포맷 변경
         departure_date = departure_date.strftime('%Y%m%d')
-        arrival_date = arrival_date.strftime('%Y%m%d')
+        if roundtrip: arrival_date = arrival_date.strftime('%Y%m%d')
 
         logging.info(f"출발일: {departure_date}, 출발지: {departure_airport}, 도착일: {arrival_date}, 도착지: {arrival_airport}, 왕복 여부: {roundtrip}")
 
