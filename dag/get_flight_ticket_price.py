@@ -74,15 +74,13 @@ def get_flight_ticket_price(**context):
         options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-software-rasterizer')
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-background-networking')
+        # options.add_argument('--disable-gpu')
+        # options.add_argument('--disable-software-rasterizer')
+        # options.add_argument('--disable-extensions')
+        # options.add_argument('--disable-background-networking')
 
-        options.add_argument('--disable-renderer-backgrounding')
-        options.add_argument('--disable-software-rasterizer')
-
-
+        # options.add_argument('--disable-renderer-backgrounding')
+        # options.add_argument('--disable-software-rasterizer')
 
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options) # docker에서는 필요 없음
 
@@ -97,11 +95,11 @@ def get_flight_ticket_price(**context):
 
         try:
             # 모든 정보가 로딩 되기까지 시간이 걸림. 최소값을 못 가져오는 상황을 방지
-            wait = WebDriverWait(driver, 200)
+            wait = WebDriverWait(driver, 30)
             wait.until(EC.presence_of_element_located((By.TAG_NAME, 'body')))  # 페이지가 완전히 로드될 때까지 대기
             wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'item_num__aKbk4')))
             
-            time.sleep(30)
+            time.sleep(10)
 
             html = driver.page_source
             soup = BeautifulSoup(html, 'html.parser')
