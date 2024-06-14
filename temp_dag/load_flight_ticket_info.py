@@ -98,16 +98,17 @@ def load(**context):
 
     cursor = get_Redshift_connection()
 
-    # 다음 id 찾기 (현재 id의 최대값 + 1)
     cursor.execute(f"SELECT COALESCE(MAX(id), 0) + 1 FROM {schema}.{table}")
     next_id = cursor.fetchone()[0]
     logging.info(f"next_id : {next_id}")
 
     for record in new_tickets:
         departure_date, departure_airport, arrival_date, arrival_airport, is_roundtrip = record
-        
+        logging.info(f"arrival_date : {arrival_date}")
+
         try:
             cursor.execute("BEGIN;")
+
             sql = f"""
                 INSERT INTO {schema}.{table} (
                     id, departure_date, departure_airport, arrival_date, arrival_airport, is_roundtrip
@@ -115,9 +116,9 @@ def load(**context):
                     %s, %s, %s, %s, %s, %s
                 );
             """
-            cursor.execute(sql, (
-                next_id,departure_date,departure_airport,arrival_date,arrival_airport,is_roundtrip
-            ))
+            param = (next_id,departure_date,departure_airport,arrival_date or None,arrival_airport,is_roundtrip)
+
+            cursor.execute(sql, param)
             cursor.execute("COMMIT;")
 
             logging.info(f"inserted {next_id},{departure_date},'{departure_airport}','{arrival_date}','{arrival_airport}','{is_roundtrip}'")
