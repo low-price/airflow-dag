@@ -18,6 +18,8 @@ import logging
 
 import time
 
+from selenium.webdriver.chrome.options import Options
+
 
 
 def get_Redshift_connection(autocommit=True):
@@ -68,18 +70,30 @@ def get_flight_ticket_price(**context):
 
         logging.info(f"출발일: {departure_date}, 출발지: {departure_airport}, 도착일: {arrival_date}, 도착지: {arrival_airport}, 왕복 여부: {roundtrip}")
 
-        options = webdriver.ChromeOptions()
+
+        service = Service(executable_path='/home/ubuntu/airflow/chromedriver-linux64/chromedriver')
+        options = Options()
+
+        # options = webdriver.ChromeOptions()
         user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.4.1.6 Safari/537.36"
         options.add_argument('user-agent=' + user_agent)
         options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
 
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-setuid-sandbox')
-        options.add_argument("--start-maximized")
+        # options.add_argument('--disable-gpu')
+        # options.add_argument('--disable-plugins')
+        # options.add_argument('--disable-images')
+        # options.add_argument('--disable-extensions')
+        # options.add_argument('--disable-background-networking')
 
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options) # docker에서는 필요 없음
+        # options.add_argument('--disable-gpu')
+        # options.add_argument('--disable-software-rasterizer')
+
+        driver = webdriver.Chrome(service=service, options=options)
+
+
+        # driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options) # docker에서는 필요 없음
 
         if roundtrip: # 왕복
             url = f"https://flight.naver.com/flights/international/{departure_airport}-{arrival_airport}-{departure_date}/"\
@@ -92,8 +106,10 @@ def get_flight_ticket_price(**context):
 
         try:
             # 모든 정보가 로딩 되기까지 시간이 걸림. 최소값을 못 가져오는 상황을 방지
-            wait = WebDriverWait(driver, 200)
-            # wait.until(EC.presence_of_element_located((By.TAG_NAME, 'body')))  # 페이지가 완전히 로드될 때까지 대기
+            wait = WebDriverWait(driver, 100)
+            # wait.until(lambda driver: driver.execute_script('return document.readyState') == 'complete')
+
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, 'body')))  # 페이지가 완전히 로드될 때까지 대기
             wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'item_num__aKbk4')))
             
             time.sleep(20)
