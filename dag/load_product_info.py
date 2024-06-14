@@ -3,6 +3,7 @@ from airflow.models import Variable
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.models import Variable
 from airflow.operators.python import ShortCircuitOperator, PythonOperator
+from airflow.decorators import task
 import psycopg2
 import requests
 from bs4 import BeautifulSoup
@@ -11,6 +12,8 @@ from datetime import datetime
 from datetime import timedelta
 import requests
 import logging
+from google.oauth2.service_account import Credentials
+import gspread
 
 
 def get_Redshift_connection(autocommit=True):
@@ -19,8 +22,30 @@ def get_Redshift_connection(autocommit=True):
     conn.autocommit = autocommit
     return conn.cursor()
 
+def read_tab_in_gsheet(url, tab):
+    logging.info('url read from gsheet start')
+
+    creds_json = Variable.get("google_authorization")
+    creds_dict = json.loads(creds_json)
+    
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+
+    client = gspread.authorize(creds)
+    sheet = client.open_by_url(url)
+    worksheet = sheet.worksheet(tab)
+
+    data = worksheet.get_all_values()
+
+    urls = []
+    for i in data:
+        urls.append(i[0])
+    logging.info(urls)
+    logging.info('url read from gsheet done')
+    return urls
+
 def read_urls(url_path):
-    logging.info('url file read start')
+    
     with open(url_path, 'r') as f:
         urls = f.read().splitlines()
     urls = [x for x in urls if x != '']
@@ -88,7 +113,7 @@ def product_info_load(schema, table, iteminfos):
         cur = get_Redshift_connection()
         try:
             cur.execute("BEGIN;")
-            cur.execute(f"INSERT INTO {schema}.{table} (item_id, vendor_item_id, url, product_name, image_url) VALUES ({itemID},{venderID},'{url}','{name}','{img_url}');")
+            cur.execute(f"INSERT INTO {schema}.{table} (item_id, vendor_item_id, url, product_name, image_url) VALUES ({itemID},{venderID},'{url}','{name[:30]}','{img_url}');")
             cur.execute("COMMIT;")
             logging.info(f"inserted {name} info")
         except (Exception, psycopg2.DatabaseError) as error:
@@ -98,7 +123,7 @@ def product_info_load(schema, table, iteminfos):
 
 
 with DAG(
-    dag_id='load_product_info',
+    dag_id='load_product_info_v2',
     start_date=datetime(2024, 6, 1),  
     schedule='@once', #'*/10 * * * *',  
     max_active_runs=1,
@@ -109,14 +134,15 @@ with DAG(
     }
 ) as dag:
 
-    url_path = "./coupang_final.txt"
     schema = 'jheon735'  
     infotable = 'coupang_product_info'
+    url = "https://docs.google.com/spreadsheets/d/10BGe9rkS6fZT8KluhzVyI7Wy1wcZyYzUuIG0AG1LZnU/edit?usp=sharing"
+    tab = "coupang_urls"
 
-    readurls = PythonOperator(
+    readtabingsheet = PythonOperator(
         task_id = 'read_urls',
-        python_callable = read_urls,
-        op_args = [url_path],
+        python_callable = read_tab_in_gsheet,
+        op_args = [url, tab],
         dag = dag)
 
     checknewurls = PythonOperator(
@@ -146,4 +172,4 @@ with DAG(
         dag = dag
     )
 
-    readurls >> checknewurls >> short_circuit >> getproductinfo >> productinfoload
+    readtabingsheet >> checknewurls >> short_circuit >> getproductinfo >> productinfoload
