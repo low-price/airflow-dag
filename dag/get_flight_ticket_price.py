@@ -88,7 +88,8 @@ def get_flight_ticket_price(**context):
 
         try:
             # 모든 정보가 로딩 되기까지 시간이 걸림. 최소값을 못 가져오는 상황을 방지
-            wait = WebDriverWait(driver, 30)
+            wait = WebDriverWait(driver, 60)
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, 'body')))  # 페이지가 완전히 로드될 때까지 대기
             wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'item_num__aKbk4')))
             
             time.sleep(10)
