@@ -28,7 +28,7 @@ def read_tab_in_gsheet_to_df(**context):
     tab = context["params"]["tab"]
 
     # Google Sheets API credentials
-    creds_json = Variable.get("google_sheet_access_token")
+    creds_json = Variable.get("google_authorization")
     creds_dict = json.loads(creds_json)
     
     # Set the correct scope for Google Sheets API
