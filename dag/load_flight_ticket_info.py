@@ -57,7 +57,7 @@ def read_gsheet(**context):
 def check_new_ticket_info(**context):
     schema = context["params"]["schema"]
     table = context["params"]["table"]
-    df = context["task_instance"].xcom_pull(key="return_value", task_ids='read_tab_in_gsheet_to_df')
+    df = context["task_instance"].xcom_pull(key="return_value", task_ids='read_gsheet')
 
     logging.info("check new ticket info start")
 
