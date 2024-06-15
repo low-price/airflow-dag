@@ -23,7 +23,7 @@ def get_Redshift_connection(autocommit=True):
 
 
 
-def read_tab_in_gsheet_to_df(**context):
+def read_gsheet(**context):
     url = context["params"]["url"]
     tab = context["params"]["tab"]
 
@@ -162,9 +162,9 @@ sheet = {
         "table": "flight_ticket_info"
 }
 
-read_tab_in_gsheet_to_df = PythonOperator(
-        task_id = 'read_tab_in_gsheet_to_df',
-        python_callable = read_tab_in_gsheet_to_df,
+read_gsheet = PythonOperator(
+        task_id = 'read_gsheet',
+        python_callable = read_gsheet,
         params = sheet,
         dag = dag)
 
@@ -176,11 +176,11 @@ check_new_ticket_info = PythonOperator(
 )
 
 load = PythonOperator(
-    task_id='product_info_load',
+    task_id='load',
     python_callable=load,
     params = sheet,
     dag = dag
     )
 
 
-read_tab_in_gsheet_to_df >> check_new_ticket_info >> load
+read_gsheet >> check_new_ticket_info >> load
